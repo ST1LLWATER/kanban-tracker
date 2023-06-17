@@ -1,0 +1,50 @@
+import React from "react";
+import Icon from "./Icon";
+import Pill from "./Pill";
+
+const TaskCard = ({ task }) => {
+	return (
+		<div className='p-5 bg-white rounded-2xl cursor-pointer'>
+			<div className='flex justify-between items-center mb-1'>
+				<Pill status={task.priority || task.status} />
+				<div className='-mt-2 font-extrabold'>...</div>
+			</div>
+			<h2 className='text-lg font-semibold text-customBlack'>{task.title}</h2>
+			{task?.description && (
+				<div className='text-xs text-primary'>{task.description}</div>
+			)}
+			{task?.images?.length && (
+				<div>
+					<div className='flex gap-x-3'>
+						{task.images.map((path, idx) => (
+							<img src={path} alt='plant' style={{ width: "100%" }} key={idx} />
+						))}
+					</div>
+				</div>
+			)}
+
+			{/* Bottom */}
+			<div className='flex justify-between mt-7'>
+				<div className='flex w-fit'>
+					{task?.usersWorking.map((imageData) => (
+						<div className='-mr-2 w-6 z-20'>
+							<img src={imageData.path} alt={imageData?.alt || "user"} />
+						</div>
+					))}
+				</div>
+				<div className='flex gap-x-4 text-primary'>
+					<div className='flex items-center'>
+						<Icon name={"message"} size={"16px"} />
+						<div className='ml-1.5 text-xs font-bold'>12 comments</div>
+					</div>
+					<div className='flex items-center'>
+						<Icon name={"folder"} size={"16px"} />
+						<div className='ml-1.5 text-xs font-bold'>15 files</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+export default TaskCard;
