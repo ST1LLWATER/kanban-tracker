@@ -4,7 +4,7 @@ import Icon from "./Icon";
 
 const Sidebar = () => {
 	return (
-		<div className='w-250px flex-shrink-0 h-full border-r border-["#DBDBDB] inline-block'>
+		<div className='min-w-[250px] w-[10%] flex-shrink-0 h-full border-r border-["#DBDBDB] inline-block'>
 			{/* Sidebar Menus */}
 			<div className='flex justify-between items-center px-6 py-7 h-88px border-b border-["#DBDBDB]'>
 				<div className='flex items-center'>
@@ -15,8 +15,8 @@ const Sidebar = () => {
 			</div>
 			<div className='px-3 w-100% '>
 				<div className='border-b border-["#DBDBDB] flex flex-col gap-y-6 py-30px px-3'>
-					{SideBarItems.map((item) => (
-						<div className='flex gap-x-4  text-primary'>
+					{SideBarItems.map((item, idx) => (
+						<div className='flex gap-x-4 text-primary' key={idx}>
 							<Icon name={item.icon} />
 							<h2 className='font-medium text-base'>{item.name}</h2>
 						</div>

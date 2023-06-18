@@ -1,127 +1,138 @@
-import React from "react";
+import React, { useState } from "react";
 import Icon from "./Icon";
 import TaskCard from "./TaskCard";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
+import {
+	todos as Todos,
+	progressTasks as ProgressTasks,
+	completedTasks as CompletedTasks,
+} from "../constant/data.js";
+
+const queryAttr = "data-rbd-drag-handle-draggable-id";
 
 const Main = () => {
-	const todos = [
-		{
-			title: "Brainstorming",
-			description:
-				"Brainstorming brings team members' diverse experience into play. ",
-			priority: "Low",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-				{
-					path: "./images/user2.png",
-				},
-				{
-					path: "./images/user3.png",
-				},
-				{
-					path: "./images/user4.png",
-				},
-			],
-		},
-		{
-			title: "Research",
-			description:
-				"User research helps you to create an optimal product for users.",
-			priority: "High",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-				{
-					path: "./images/user2.png",
-				},
-				{
-					path: "./images/user3.png",
-				},
-			],
-		},
-		{
-			title: "Wireframes",
-			description:
-				"Low fidelity wireframes include the most basic content and visuals.",
-			priority: "High",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-				{
-					path: "./images/user4.png",
-				},
-			],
-		},
-	];
+	const [placeholderProps, setPlaceholderProps] = useState({});
+	const [data, setData] = useState({
+		todo: Todos,
+		progress: ProgressTasks,
+		done: CompletedTasks,
+	});
 
-	const progressTasks = [
-		{
-			title: "Onboarding Illustrations",
-			description: "",
-			images: ["./images/flower.png"],
-			priority: "Low",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-				{
-					path: "./images/user2.png",
-				},
-				{
-					path: "./images/user3.png",
-				},
-			],
-		},
-		{
-			title: "Moodboard",
-			images: ["./images/flower1.png", "./images/flower2.png"],
-			priority: "Low",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-			],
-		},
-	];
+	const handleDragStart = (update) => {
+		const draggedDOM = getDraggedDom(update.draggableId);
 
-	const completedTasks = [
-		{
-			title: "Mobile App Design",
-			description: "",
-			images: ["./images/plant.png"],
-			status: "Completed",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-				{
-					path: "./images/user2.png",
-				},
-			],
-		},
-		{
-			title: "Design System",
-			description: "It just needs to adapt the UI from what you did before ",
-			status: "Completed",
-			usersWorking: [
-				{
-					path: "./images/user1.png",
-				},
-				{
-					path: "./images/user2.png",
-				},
-				{
-					path: "./images/user3.png",
-				},
-			],
-		},
-	];
+		if (!draggedDOM) {
+			return;
+		}
+
+		const { clientHeight, clientWidth } = draggedDOM;
+		const sourceIndex = update.source.index;
+		let client = draggedDOM.parentElement.getBoundingClientRect();
+
+		console.log("psoition", client.y);
+		console.log("client", {
+			top:
+				draggedDOM.getBoundingClientRect().y +
+				window.getComputedStyle(draggedDOM).marginTop,
+			left: client.x,
+		});
+
+		var clientY =
+			parseFloat(window.getComputedStyle(draggedDOM.parentNode).paddingTop) +
+			[...draggedDOM.parentNode.children]
+				.slice(0, sourceIndex)
+				.reduce((total, curr) => {
+					const style = curr.currentStyle || window.getComputedStyle(curr);
+					const marginBottom = parseFloat(style.marginBottom);
+					return total + curr.clientHeight + marginBottom;
+				}, 0);
+
+		setPlaceholderProps({
+			clientHeight,
+			clientWidth,
+			clientY:
+				client.y + window.getComputedStyle(draggedDOM).marginTop ||
+				draggedDOM.getBoundingClientRect().y,
+			clientX: client.x,
+		});
+	};
+
+	const handleDragEnd = (result) => {
+		const { source, destination } = result;
+		if (!destination) return 0;
+		if (source.droppableId === destination.droppableId) {
+			setData((prev) => {
+				const draggedItem = prev[source.droppableId][source.index];
+				prev[source.droppableId].splice(source.index, 1);
+				prev[destination.droppableId].splice(destination.index, 0, draggedItem);
+				return prev;
+			});
+		}
+		if (source.droppableId !== destination.droppableId) {
+			setData((prev) => {
+				const draggedItem = prev[source.droppableId][source.index];
+				prev[source.droppableId].splice(source.index, 1);
+				prev[destination.droppableId].splice(destination.index, 0, draggedItem);
+				return prev;
+			});
+		}
+		setPlaceholderProps({});
+	};
+
+	const handleDragUpdate = (event) => {
+		if (!event.destination) {
+			return;
+		}
+
+		const draggedDOM = getDraggedDom(event.draggableId);
+
+		if (!draggedDOM) {
+			return;
+		}
+
+		const { clientHeight, clientWidth } = draggedDOM;
+		const destinationIndex = event.destination.index;
+		const sourceIndex = event.source.index;
+
+		const childrenArray = [...draggedDOM.parentNode.children];
+		const movedItem = childrenArray[sourceIndex];
+		childrenArray.splice(sourceIndex, 1);
+
+		const updatedArray = [
+			...childrenArray.slice(0, destinationIndex),
+			movedItem,
+			...childrenArray.slice(destinationIndex + 1),
+		];
+
+		var clientY =
+			parseFloat(window.getComputedStyle(draggedDOM.parentNode).paddingTop) +
+			updatedArray.slice(0, destinationIndex).reduce((total, curr) => {
+				const style = curr.currentStyle || window.getComputedStyle(curr);
+				const marginBottom = parseFloat(style.marginBottom);
+				return total + curr.clientHeight + marginBottom;
+			}, 0);
+
+		setPlaceholderProps({
+			clientHeight,
+			clientWidth,
+			clientY,
+			clientX: parseFloat(
+				window.getComputedStyle(draggedDOM.parentNode).paddingLeft,
+			),
+		});
+	};
+
+	const getDraggedDom = (draggableId) => {
+		const domQuery = `[${queryAttr}='${draggableId}']`;
+		const draggedDOM = document.querySelector(domQuery);
+
+		return draggedDOM;
+	};
+
+	console.log("placeholder data - ", placeholderProps);
 
 	return (
-		<div className='flex flex-col px-12 pt-5 w-full h-full '>
+		<div className='flex flex-col px-12 pt-5 w-full '>
 			{/*  */}
 			<div className='flex justify-between py-5'>
 				{/* Heading Side */}
@@ -195,56 +206,133 @@ const Main = () => {
 			</div>
 
 			{/*  */}
-			<div className='pt-22px grid grid-cols-3 gap-x-4 h-full'>
-				{/* To Do */}
-				<div className='h-full bg-customGray rounded-t-2xl px-5'>
-					<div className='flex items-center gap-x-2 pt-5 pb-22px border-b-3px border-customPurple mb-2 '>
-						<div className='w-2 h-2 bg-violet-500 rounded-full'></div>
-						<h3 className='font-medium'>To Do</h3>
-						<div className='w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium text-[#625F6D] bg-[#E0E0E0] ml-1'>
-							{todos.length}
-						</div>
-					</div>
-					<div className='mt-5 overflow-y-auto flex flex-col gap-y-5'>
-						{todos.map((i, idx) => (
-							<TaskCard task={i} key={idx} />
-						))}
-					</div>
-				</div>
+			<DragDropContext
+				onDragStart={handleDragStart}
+				onDragUpdate={handleDragUpdate}
+				onDragEnd={handleDragEnd}
+			>
+				<div className='pt-22px grid grid-cols-3 gap-x-4'>
+					{/* To Do */}
+					<Droppable droppableId='todo'>
+						{(provided) => (
+							<div
+								className='h-full bg-customGray rounded-t-2xl px-5'
+								ref={provided.innerRef}
+								{...provided.droppableProps}
+							>
+								<div className='flex items-center gap-x-2 pt-5 pb-22px border-b-3px border-customPurple mb-2 '>
+									<div className='w-2 h-2 bg-violet-500 rounded-full'></div>
+									<h3 className='font-medium'>To Do</h3>
+									<div className='w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium text-[#625F6D] bg-[#E0E0E0] ml-1'>
+										{data["todo"]?.length}
+									</div>
+								</div>
+								<div className=' overflow-auto flex flex-col'>
+									{data["todo"].map((i, idx) => (
+										<TaskCard
+											task={i}
+											key={idx + "todo"}
+											id={idx}
+											col={"todo"}
+										/>
+									))}
+									{provided.placeholder}
+									<div
+										className={`absolute bg-[rgba(81,48,229,0.06)] border border-dashed  border-[rgba(80,48,229,0.59)] rounded-2xl top-[${placeholderProps.top}] mb-4`}
+										style={{
+											top: placeholderProps.clientY,
+											left: placeholderProps.clientX,
+											height: placeholderProps.clientHeight,
+											width: placeholderProps.clientWidth,
+										}}
+									/>
+								</div>
+							</div>
+						)}
+					</Droppable>
 
-				{/* On Progress */}
-				<div className='h-full bg-customGray rounded-t-2xl px-5'>
-					<div className='flex items-center gap-x-2 pt-5 pb-22px border-b-3px border-[#FFA500] mb-2 '>
-						<div className='w-2 h-2 bg-blue-500 rounded-full'></div>
-						<h3 className='font-medium'>On Progress</h3>
-						<div className='w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium text-[#625F6D] bg-[#E0E0E0] ml-1'>
-							{progressTasks.length}
-						</div>
-					</div>
+					{/* On Progress */}
+					<Droppable droppableId='progress'>
+						{(provided, snapshot) => (
+							<div
+								className='h-full bg-customGray rounded-t-2xl px-5'
+								ref={provided.innerRef}
+								{...provided.droppableProps}
+							>
+								<div className='flex items-center gap-x-2 pt-5 pb-22px border-b-3px border-[#FFA500] mb-2 '>
+									<div className='w-2 h-2 bg-blue-500 rounded-full'></div>
+									<h3 className='font-medium'>On Progress</h3>
+									<div className='w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium text-[#625F6D] bg-[#E0E0E0] ml-1'>
+										{data["progress"]?.length}
+									</div>
+								</div>
 
-					<div className='mt-5 overflow-y-auto flex flex-col gap-y-5'>
-						{progressTasks.map((i, idx) => (
-							<TaskCard task={i} key={idx} />
-						))}
-					</div>
-				</div>
+								<div className='mt-5 overflow-x-auto flex flex-col gap-y-5'>
+									{data["progress"].map((i, idx) => (
+										<TaskCard
+											task={i}
+											key={idx + "progress"}
+											id={idx}
+											col={"progress"}
+										/>
+									))}
+									{provided.placeholder}
+									{/* <CustomPlaceholder snapshot={snapshot} /> */}
+									<div
+										className={`absolute bg-[rgba(81,48,229,0.2)] border border-dashed  border-[rgba(80,48,229,0.59)] rounded-2xl`}
+										style={{
+											top: placeholderProps.clientY,
+											left: placeholderProps.clientX,
+											height: placeholderProps.clientHeight,
+											width: placeholderProps.clientWidth,
+										}}
+									/>
+								</div>
+							</div>
+						)}
+					</Droppable>
 
-				{/* Done */}
-				<div className='h-full bg-customGray rounded-t-2xl px-5 '>
-					<div className='flex items-center gap-x-2 pt-5 pb-22px border-b-3px border-[#8BC48A] mb-2'>
-						<div className='w-2 h-2 bg-green-500 rounded-full'></div>
-						<h3 className='font-medium'>Done</h3>
-						<div className='w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium text-[#625F6D] bg-[#E0E0E0] ml-1'>
-							2
-						</div>
-					</div>
-					<div className='mt-5 overflow-y-auto flex flex-col gap-y-5'>
-						{completedTasks.map((i, idx) => (
-							<TaskCard task={i} key={idx} />
-						))}
-					</div>
+					{/* Done */}
+					<Droppable droppableId='done'>
+						{(provided) => (
+							<div
+								className='h-full bg-customGray rounded-t-2xl px-5 '
+								ref={provided.innerRef}
+								{...provided.droppableProps}
+							>
+								<div className='flex items-center gap-x-2 pt-5 pb-22px border-b-3px border-[#8BC48A] mb-2'>
+									<div className='w-2 h-2 bg-green-500 rounded-full'></div>
+									<h3 className='font-medium'>Done</h3>
+									<div className='w-5 h-5 flex items-center justify-center rounded-full text-xs font-medium text-[#625F6D] bg-[#E0E0E0] ml-1'>
+										{data["done"]?.length}
+									</div>
+								</div>
+								<div className='mt-5 overflow-x-auto flex flex-col gap-y-5'>
+									{data["done"].map((i, idx) => (
+										<TaskCard
+											task={i}
+											key={idx + "done"}
+											id={idx}
+											col={"done"}
+										/>
+									))}
+									{provided.placeholder}
+									{/* <CustomPlaceholder snapshot={snapshot} /> */}
+									<div
+										className={`absolute bg-[rgba(81,48,229,0.2)] border border-dashed  border-[rgba(80,48,229,0.59)] rounded-2xl top-[${placeholderProps.top}] `}
+										style={{
+											top: placeholderProps.clientY,
+											left: placeholderProps.clientX,
+											height: placeholderProps.clientHeight,
+											width: placeholderProps.clientWidth,
+										}}
+									/>
+								</div>
+							</div>
+						)}
+					</Droppable>
 				</div>
-			</div>
+			</DragDropContext>
 		</div>
 	);
 };
